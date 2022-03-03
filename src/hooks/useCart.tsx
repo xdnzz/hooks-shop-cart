@@ -23,28 +23,54 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
-
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
-
+    const storagedCart = localStorage.getItem('@RocketShoes:cart');
+    if (storagedCart) {
+      return JSON.parse(storagedCart);
+    }
     return [];
   });
 
   const addProduct = async (productId: number) => {
     try {
-      // TODO
-    } catch {
-      // TODO
+      const updatedCart = [...cart];
+      const existPath = updatedCart.find(product => product.id === productId);
+      const getPath = await api.get(`/products/${productId}`);
+      const getAmount = getPath.data.amount;
+      const validAmount = existPath ? existPath.amount : 0;
+      const getNewAmount = validAmount + 1;
+      if(getNewAmount > getAmount) {
+      toast.error('Quantidade solicitada fora do estoque')
+      }
+      if(existPath) {
+        existPath.amount = getNewAmount;
+      } else {
+        const getNewPath = await api.get(`/products/${productId}`)
+        const setNewData = {
+          ...getNewPath.data,
+          amount: 1
+        }
+        updatedCart.push(setNewData)
+        }
+        setCart(updatedCart);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart))
+    }catch {
+      toast.error('Erro na adição do produto');
     }
   };
 
   const removeProduct = (productId: number) => {
     try {
-      // TODO
+      const updatedCart = [...cart]
+      const filterData = cart.findIndex(product => product.id === productId)
+      if(filterData >= 0) {
+        updatedCart.slice(filterData, 1)
+        setCart(updatedCart)
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(filterData))
+      } else {
+        throw Error()
+      }
     } catch {
-      // TODO
+      toast.error('Erro na remoção do produto');
     }
   };
 
